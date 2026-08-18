@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RBXM → Asset ID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+
+  <header>
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">RBXM Studio</span>
+        <span class="logo-sub">Open Cloud Uploader</span>
+      </div>
+    </div>
+    <div class="header-badge">v1.0</div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="hero">
+      <div class="hero-tag">Roblox Open Cloud API</div>
+      <h1>Upload <span class="accent">.rbxm</span> ke Roblox</h1>
+      <p>Jadikan file model Roblox kamu sebagai Asset ID — siap dipakai di Studio Lite lewat Toolbox.</p>
+    </section>
+
+    <section class="card" id="apiKeyCard">
+      <div class="card-label">
+        <span class="dot"></span>
+        LANGKAH 1 — API KEY
+      </div>
+      <p class="card-desc">Masukkan Roblox Open Cloud API Key kamu. Key ini hanya tersimpan selama tab ini terbuka dan tidak dikirim ke server kami.</p>
+      <div class="field-group">
+        <label for="apiKeyInput">API Key</label>
+        <div class="input-row">
+          <input type="password" id="apiKeyInput" placeholder="Paste API Key dari creator.roblox.com..." autocomplete="off" spellcheck="false" />
+          <button class="btn-icon" id="toggleKey" title="Tampilkan / sembunyikan">
+            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <p class="field-hint">
+          Buat API Key di <a href="https://create.roblox.com/credentials" target="_blank" rel="noopener">create.roblox.com/credentials</a> → pilih permission <strong>Assets: write</strong>
+        </p>
+      </div>
+    </section>
+
+    <section class="card" id="uploadCard">
+      <div class="card-label">
+        <span class="dot"></span>
+        LANGKAH 2 — PILIH FILE & UPLOAD
+      </div>
+
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".rbxm,.rbxmx" />
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <p class="drop-title">Klik atau seret file ke sini</p>
+        <p class="drop-sub">Format .rbxm dan .rbxmx · Maks 20 MB</p>
+      </div>
+
+      <div class="file-info" id="fileInfo">
+        <div class="fi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="fi-meta">
+          <span class="fi-name" id="fileName">—</span>
+          <span class="fi-size" id="fileSize">—</span>
+        </div>
+        <button class="btn-icon btn-remove" id="removeFile" title="Hapus file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="fields">
+        <div class="field-group">
+          <label for="assetName">Nama Asset <span class="required">*</span></label>
+          <input type="text" id="assetName" placeholder="Contoh: Medieval Castle Tower" maxlength="50" />
+        </div>
+        <div class="field-group">
+          <label for="assetDesc">Deskripsi <span class="optional">(opsional)</span></label>
+          <textarea id="assetDesc" placeholder="Deskripsi singkat model ini..." rows="3" maxlength="200"></textarea>
+        </div>
+      </div>
+
+      <button class="btn-upload" id="uploadBtn" disabled>
+        <svg class="btn-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span id="uploadBtnLabel">Upload ke Roblox</span>
+      </button>
+    </section>
+
+    <section class="card card-status" id="statusCard" style="display:none;">
+      <div class="status-anim" id="statusAnim">
+        <div class="spinner"></div>
+      </div>
+      <div class="status-text">
+        <p class="status-title" id="statusTitle">Mengunggah file...</p>
+        <p class="status-sub" id="statusSub">Mohon tunggu, jangan tutup tab ini.</p>
+      </div>
+    </section>
+
+    <section class="card card-result" id="resultCard" style="display:none;">
+      <div class="result-header">
+        <div class="result-icon success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div>
+          <p class="result-title">Upload Berhasil!</p>
+          <p class="result-sub">Asset ID siap digunakan di Studio Lite</p>
+        </div>
+      </div>
+
+      <div class="result-rows">
+        <div class="result-row">
+          <span class="result-label">Asset ID</span>
+          <div class="result-value-row">
+            <code class="result-value" id="outAssetId">—</code>
+            <button class="btn-copy" data-target="outAssetId" title="Salin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="result-row">
+          <span class="result-label">rbxassetid:// Format</span>
+          <div class="result-value-row">
+            <code class="result-value" id="outRbxUri">—</code>
+            <button class="btn-copy" data-target="outRbxUri" title="Salin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="result-row">
+          <span class="result-label">Lua — InsertService</span>
+          <div class="result-value-row">
+            <code class="result-value result-value--lua" id="outLua">—</code>
+            <button class="btn-copy" data-target="outLua" title="Salin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-reset" id="resetBtn">Upload File Lain</button>
+    </section>
+
+    <section class="card card-error" id="errorCard" style="display:none;">
+      <div class="result-header">
+        <div class="result-icon error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </div>
+        <div>
+          <p class="result-title">Upload Gagal</p>
+          <p class="result-sub" id="errorMsg">Terjadi kesalahan yang tidak diketahui.</p>
+        </div>
+      </div>
+      <button class="btn-reset" id="retryBtn">Coba Lagi</button>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Data kamu tidak disimpan di server kami. API Key hanya ada di session browser ini.</p>
+  </footer>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
