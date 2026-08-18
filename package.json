@@ -1,0 +1,8 @@
+{
+  "name": "rbxm-uploader",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "formidable": "^3.5.1"
+  }
+}
