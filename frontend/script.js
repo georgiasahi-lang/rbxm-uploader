@@ -2,51 +2,52 @@
 
 const $ = (id) => document.getElementById(id);
 
-const apiKeyInput  = $("apiKeyInput");
-const toggleKey    = $("toggleKey");
-const dropZone     = $("dropZone");
-const fileInput    = $("fileInput");
-const fileInfo     = $("fileInfo");
-const fileName     = $("fileName");
-const fileSize     = $("fileSize");
-const removeFile   = $("removeFile");
-const assetName    = $("assetName");
-const assetDesc    = $("assetDesc");
-const uploadBtn    = $("uploadBtn");
-const uploadLabel  = $("uploadBtnLabel");
-const statusCard   = $("statusCard");
-const statusTitle  = $("statusTitle");
-const statusSub    = $("statusSub");
-const resultCard   = $("resultCard");
-const errorCard    = $("errorCard");
-const errorMsg     = $("errorMsg");
-const outAssetId   = $("outAssetId");
-const outRbxUri    = $("outRbxUri");
-const outLua       = $("outLua");
-const resetBtn     = $("resetBtn");
-const retryBtn     = $("retryBtn");
-const toastWrap    = $("toastWrap");
+const apiKeyInput = $("apiKeyInput");
+const toggleKey   = $("toggleKey");
+const dropZone    = $("dropZone");
+const fileInput   = $("fileInput");
+const fileInfo    = $("fileInfo");
+const fileName    = $("fileName");
+const fileSize    = $("fileSize");
+const removeFile  = $("removeFile");
+const assetName   = $("assetName");
+const assetDesc   = $("assetDesc");
+const uploadBtn   = $("uploadBtn");
+const uploadLabel = $("uploadBtnLabel");
+const statusCard  = $("statusCard");
+const statusTitle = $("statusTitle");
+const statusSub   = $("statusSub");
+const resultCard  = $("resultCard");
+const errorCard   = $("errorCard");
+const errorMsg    = $("errorMsg");
+const outAssetId  = $("outAssetId");
+const outRbxUri   = $("outRbxUri");
+const outLua      = $("outLua");
+const resetBtn    = $("resetBtn");
+const retryBtn    = $("retryBtn");
+const toastWrap   = $("toastWrap");
 
-let selectedFile = null;
 const SESSION_KEY = "rbxm_apikey";
+let selectedFile  = null;
+let isUploading   = false;
 
 function loadSessionKey() {
-  const stored = sessionStorage.getItem(SESSION_KEY);
-  if (stored) apiKeyInput.value = stored;
+  const v = sessionStorage.getItem(SESSION_KEY);
+  if (v) apiKeyInput.value = v;
 }
 
-function saveSessionKey(val) {
-  if (val) sessionStorage.setItem(SESSION_KEY, val);
+function saveSessionKey(v) {
+  if (v) sessionStorage.setItem(SESSION_KEY, v);
   else sessionStorage.removeItem(SESSION_KEY);
 }
 
-function formatBytes(bytes) {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-  return (bytes / 1048576).toFixed(2) + " MB";
+function formatBytes(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
+  return (b / 1048576).toFixed(2) + " MB";
 }
 
-function showToast(msg, type = "") {
+function showToast(msg, type) {
   const el = document.createElement("div");
   el.className = "toast" + (type ? " " + type : "");
   el.textContent = msg;
@@ -85,10 +86,19 @@ function clearFile() {
 }
 
 function checkReady() {
-  const hasKey  = apiKeyInput.value.trim().length > 0;
-  const hasFile = selectedFile !== null;
-  const hasName = assetName.value.trim().length > 0;
-  uploadBtn.disabled = !(hasKey && hasFile && hasName);
+  const ok =
+    !isUploading &&
+    apiKeyInput.value.trim().length > 0 &&
+    selectedFile !== null &&
+    assetName.value.trim().length > 0;
+  uploadBtn.disabled = !ok;
+}
+
+function showSection(id) {
+  statusCard.style.display = "none";
+  resultCard.style.display = "none";
+  errorCard.style.display  = "none";
+  if (id) $(id).style.display = "";
 }
 
 function setStatus(title, sub) {
@@ -96,11 +106,16 @@ function setStatus(title, sub) {
   statusSub.textContent   = sub;
 }
 
-function showSection(id) {
-  ["statusCard", "resultCard", "errorCard"].forEach((s) => {
-    $(s).style.display = "none";
-  });
-  if (id) $(id).style.display = "";
+function setUploading(state) {
+  isUploading = state;
+  uploadLabel.textContent = state ? "Mengunggah..." : "Upload ke Roblox";
+  checkReady();
+}
+
+function fillResult(assetId) {
+  outAssetId.textContent = assetId;
+  outRbxUri.textContent  = "rbxassetid://" + assetId;
+  outLua.textContent     = `game:GetService("InsertService"):LoadAsset(${assetId})`;
 }
 
 async function copyText(text) {
@@ -112,25 +127,19 @@ async function copyText(text) {
   }
 }
 
-function fillResult(assetId) {
-  outAssetId.textContent = assetId;
-  outRbxUri.textContent  = "rbxassetid://" + assetId;
-  outLua.textContent     = `game:GetService("InsertService"):LoadAsset(${assetId})`;
-}
-
 async function doUpload() {
+  if (isUploading) return;
+
   const key  = apiKeyInput.value.trim();
   const name = assetName.value.trim();
   const desc = assetDesc.value.trim();
 
-  if (!key)  { showToast("API Key wajib diisi dulu"); return; }
+  if (!key)          { showToast("API Key wajib diisi dulu"); return; }
   if (!selectedFile) { showToast("Pilih file .rbxm dulu"); return; }
-  if (!name) { showToast("Nama asset wajib diisi"); return; }
+  if (!name)         { showToast("Nama asset wajib diisi"); return; }
 
   saveSessionKey(key);
-
-  uploadBtn.disabled = true;
-  uploadLabel.textContent = "Mengunggah...";
+  setUploading(true);
 
   showSection("statusCard");
   setStatus("Mengunggah file ke server...", "Mohon tunggu, jangan tutup tab ini.");
@@ -143,7 +152,8 @@ async function doUpload() {
 
   let data;
   try {
-    setStatus("Meneruskan ke Roblox Open Cloud...", "Proses ini bisa memakan 10–30 detik.");
+    setStatus("Meneruskan ke Roblox Open Cloud...", "Proses ini bisa memakan 10–60 detik.");
+
     const res = await fetch("/api/upload", {
       method: "POST",
       body: form,
@@ -155,33 +165,29 @@ async function doUpload() {
       throw new Error(data.error || "Terjadi kesalahan dari server.");
     }
   } catch (err) {
+    setUploading(false);
     showSection("errorCard");
-    errorMsg.textContent = err.message || "Gagal terhubung ke server. Periksa koneksi internet.";
-    resetUploadBtn();
+    errorMsg.textContent = err.message || "Gagal terhubung ke server.";
     return;
   }
+
+  setUploading(false);
 
   if (!data.assetId) {
     showSection("errorCard");
     errorMsg.textContent = "Asset ID tidak diterima dari Roblox. Coba lagi.";
-    resetUploadBtn();
     return;
   }
 
   fillResult(data.assetId);
   showSection("resultCard");
-  resetUploadBtn();
-}
-
-function resetUploadBtn() {
-  uploadLabel.textContent = "Upload ke Roblox";
-  checkReady();
 }
 
 function resetAll() {
   clearFile();
   assetName.value = "";
   assetDesc.value = "";
+  isUploading = false;
   showSection(null);
   checkReady();
 }
@@ -190,8 +196,7 @@ loadSessionKey();
 checkReady();
 
 toggleKey.addEventListener("click", () => {
-  const isHidden = apiKeyInput.type === "password";
-  apiKeyInput.type = isHidden ? "text" : "password";
+  apiKeyInput.type = apiKeyInput.type === "password" ? "text" : "password";
 });
 
 apiKeyInput.addEventListener("input", () => {
@@ -219,26 +224,26 @@ dropZone.addEventListener("dragleave", () => {
 dropZone.addEventListener("drop", (e) => {
   e.preventDefault();
   dropZone.classList.remove("dragging");
-  const file = e.dataTransfer.files[0];
-  if (file) setFile(file);
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
 });
 
 uploadBtn.addEventListener("click", doUpload);
 
 resetBtn.addEventListener("click", resetAll);
+
 retryBtn.addEventListener("click", () => {
+  isUploading = false;
   showSection(null);
   checkReady();
 });
 
 document.querySelectorAll(".btn-copy").forEach((btn) => {
   btn.addEventListener("click", async () => {
-    const targetId = btn.dataset.target;
-    const text = $(targetId)?.textContent || "";
+    const text = $(btn.dataset.target)?.textContent || "";
     const ok = await copyText(text);
     if (ok) {
       btn.classList.add("copied");
-      showToast("Disalin ke clipboard!", "green");
+      showToast("Disalin!", "green");
       setTimeout(() => btn.classList.remove("copied"), 1800);
     } else {
       showToast("Gagal menyalin — salin manual ya");
