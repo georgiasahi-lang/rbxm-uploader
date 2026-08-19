@@ -426,8 +426,9 @@ textarea:focus {
   transform: none;
 }
 
+/* FIXED: hapus !important supaya display:none dari JS bisa bekerja */
 .card-status {
-  display: flex !important;
+  display: flex;
   align-items: center;
   gap: 20px;
 }
