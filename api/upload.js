@@ -150,7 +150,7 @@ export default async function handler(req, res) {
     assetType: "Model",
     displayName: assetName.trim(),
     description: desc.trim(),
-    creationContext: { creator: {} },
+    creationContext: { creator: { creatorType: "User", creatorId: 0 } },
   });
 
   const boundary = "----RBXMBoundary" + Date.now().toString(16);
