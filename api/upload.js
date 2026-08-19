@@ -20,7 +20,12 @@ function cors(res) {
 
 function parseForm(req) {
   return new Promise((resolve, reject) => {
-    const form = new IncomingForm({ maxFileSize: 20 * 1024 * 1024 });
+    const form = new IncomingForm({
+      uploadDir: "/tmp",
+      keepExtensions: true,
+      maxFileSize: 20 * 1024 * 1024,
+      multiples: false,
+    });
     form.parse(req, (err, fields, files) => {
       if (err) return reject(err);
       resolve({ fields, files });
@@ -45,7 +50,9 @@ async function pollOperation(operationId, apiKey) {
 
     if (json.done) {
       if (json.error) {
-        throw new Error(`Roblox error: ${json.error.message || JSON.stringify(json.error)}`);
+        throw new Error(
+          `Roblox error: ${json.error.message || JSON.stringify(json.error)}`
+        );
       }
       const id =
         json.response?.assetId ||
@@ -55,7 +62,7 @@ async function pollOperation(operationId, apiKey) {
       return String(id);
     }
   }
-  throw new Error("Timeout — Roblox terlalu lama. Coba lagi.");
+  throw new Error("Timeout — Roblox terlalu lama memproses. Coba lagi.");
 }
 
 export default async function handler(req, res) {
@@ -69,29 +76,45 @@ export default async function handler(req, res) {
   try {
     ({ fields, files } = await parseForm(req));
   } catch (err) {
-    return res.status(400).json({ error: "Gagal membaca form: " + err.message });
+    return res
+      .status(400)
+      .json({ error: "Gagal membaca form: " + err.message });
   }
 
-  const apiKey    = Array.isArray(fields.apiKey)    ? fields.apiKey[0]    : fields.apiKey;
-  const assetName = Array.isArray(fields.assetName) ? fields.assetName[0] : fields.assetName;
-  const desc      = Array.isArray(fields.description) ? fields.description[0] : (fields.description || "");
+  const pick = (v) => (Array.isArray(v) ? v[0] : v);
+
+  const apiKey    = pick(fields.apiKey);
+  const assetName = pick(fields.assetName);
+  const desc      = pick(fields.description) || "";
   const fileArr   = files.file;
   const file      = Array.isArray(fileArr) ? fileArr[0] : fileArr;
 
-  if (!apiKey?.trim())    return res.status(400).json({ error: "API Key wajib diisi." });
-  if (!assetName?.trim()) return res.status(400).json({ error: "Nama asset wajib diisi." });
-  if (!file)              return res.status(400).json({ error: "File .rbxm wajib dipilih." });
+  if (!apiKey?.trim())
+    return res.status(400).json({ error: "API Key wajib diisi." });
+  if (!assetName?.trim())
+    return res.status(400).json({ error: "Nama asset wajib diisi." });
+  if (!file)
+    return res.status(400).json({ error: "File .rbxm wajib dipilih." });
 
-  const origName = file.originalFilename || file.name || "model.rbxm";
+  const origName =
+    file.originalFilename || file.newFilename || file.name || "model.rbxm";
   const ext = origName.split(".").pop().toLowerCase();
   if (!["rbxm", "rbxmx"].includes(ext))
-    return res.status(400).json({ error: "File harus .rbxm atau .rbxmx." });
+    return res
+      .status(400)
+      .json({ error: "File harus berformat .rbxm atau .rbxmx." });
+
+  const filePath = file.filepath || file.path;
+  if (!filePath)
+    return res.status(500).json({ error: "Path file tidak ditemukan di server." });
 
   let fileBuffer;
   try {
-    fileBuffer = readFileSync(file.filepath || file.path);
-  } catch {
-    return res.status(500).json({ error: "Gagal membaca file dari disk." });
+    fileBuffer = readFileSync(filePath);
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ error: "Gagal membaca file dari disk: " + err.message });
   }
 
   if (!fileBuffer || fileBuffer.length === 0)
@@ -123,7 +146,9 @@ export default async function handler(req, res) {
       body: formData,
     });
   } catch (err) {
-    return res.status(502).json({ error: "Gagal terhubung ke Roblox: " + err.message });
+    return res
+      .status(502)
+      .json({ error: "Gagal terhubung ke Roblox: " + err.message });
   }
 
   const uploadText = await uploadRes.text();
@@ -134,14 +159,18 @@ export default async function handler(req, res) {
       const p = JSON.parse(uploadText);
       msg = p.message || p.error || uploadText;
     } catch {}
-    return res.status(uploadRes.status).json({ error: "Roblox menolak upload: " + msg });
+    return res
+      .status(uploadRes.status)
+      .json({ error: "Roblox menolak upload: " + msg });
   }
 
   let uploadJson;
   try {
     uploadJson = JSON.parse(uploadText);
   } catch {
-    return res.status(502).json({ error: "Response Roblox tidak valid JSON." });
+    return res
+      .status(502)
+      .json({ error: "Response Roblox tidak valid JSON." });
   }
 
   const operationId =
@@ -149,7 +178,9 @@ export default async function handler(req, res) {
     (uploadJson.path ? uploadJson.path.split("/").pop() : null);
 
   if (!operationId)
-    return res.status(502).json({ error: "Operation ID tidak ditemukan dari Roblox." });
+    return res
+      .status(502)
+      .json({ error: "Operation ID tidak ditemukan dari Roblox." });
 
   let assetId;
   try {
